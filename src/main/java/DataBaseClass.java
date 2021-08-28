@@ -18,9 +18,21 @@ public class DataBaseClass {
 
     protected boolean updateDB;
     protected String db;
+    protected HashMap<String, Integer> amountOfUsages;
 
     public DataBaseClass(boolean updateDB) {
         this.updateDB = updateDB;
+    }
+
+    public int getUsagesOf(String company) {
+        return this.amountOfUsages.get(company);
+    }
+
+    private void incUsagesOf(String company) {
+        if(this.amountOfUsages.containsKey(company))
+            this.amountOfUsages.replace(company, this.amountOfUsages.get(company) + 1);
+        else
+            this.amountOfUsages.put(company, 1);
     }
 
     public void setUpdateDB(boolean updateDB) {
@@ -114,28 +126,37 @@ public class DataBaseClass {
 
         char q = (char) 34;
 
+        boolean objContainsSubGlobal = false;
+
+        String companyName = "НаимСокрЮЛ";
+
         for (Object o : companies) {
+
+            if(objContainsSubGlobal) {
+                this.incUsagesOf(companyName);
+            }
+
             JSONObject jsonObject = (JSONObject) o;
 
-            StringBuilder result = new StringBuilder();
-
-            // HashMap<String, String> company = new HashMap<>();
-            String companyName = "НаимСокрЮЛ";
-
             boolean objContainsSub;
+
+            StringBuilder result = new StringBuilder();
 
             for (String key : jsonObject.keySet()) {
                 String obj = jsonObject.get(key).toString();
 
-                companyName = (key.equals(companyName)) ? obj : companyName;
-
-                // company.put(key, obj);
+                if(key.equals(companyName)) {
+                    companyName = obj;
+                    if(!this.amountOfUsages.containsKey(companyName))
+                        this.amountOfUsages.put(companyName, 0);
+                }
 
                 for(String sub : subsArray) {
 
                     objContainsSub = obj.toLowerCase().contains(sub.toLowerCase());
 
                     if(objContainsSub) {
+                        objContainsSubGlobal = true;
                         result.append(q).append(sub).append(q).append(" -> ").append(
                                                      obj.replace("{", "")
                                                         .replace("}", "")
@@ -149,11 +170,18 @@ public class DataBaseClass {
                         else
                             results.put(companyName, result.toString());
                     }
+                    else {
+                        objContainsSubGlobal = false;
+                    }
 
                 }
 
             }
 
+        }
+
+        if(objContainsSubGlobal) {
+            this.incUsagesOf(companyName);
         }
 
         return (results.size() == 0) ? null : results;
