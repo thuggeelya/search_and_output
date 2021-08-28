@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Server {
@@ -47,57 +48,61 @@ public class Server {
                         System.out.println(currentState + "\n");
                         String request = help.readLine();
 
-                        ArrayList<String> mainCondition = new ArrayList<>();
-                        ArrayList<String> additionalCondition = new ArrayList<>();
+                        String response = "";
 
-                        Operator temp = new Operator(request);
-                        AnalyzeInput analyzeInput = new AnalyzeInput(temp);
+                        if(!Objects.equals(request, "") && request != null) {
+                            ArrayList<String> mainCondition = new ArrayList<>();
+                            ArrayList<String> additionalCondition = new ArrayList<>();
 
-                        String[] input = temp.delQuotes(analyzeInput.getWords().toArray(new String[2]));
-                        for(int i=0; i<input.length; i++) {
-                            input[i] = input[i].replaceAll("(?<=\\S)\\+", "[а-яА-Яa-zA-Z0-9\\-]*");
-                        }
+                            Operator temp = new Operator(request);
+                            AnalyzeInput analyzeInput = new AnalyzeInput(temp);
 
-                        int n = analyzeInput.getN();
+                            String[] input = temp.delQuotes(analyzeInput.getWords().toArray(new String[0]));
+                            for (int i = 0; i < input.length; i++) {
+                                input[i] = input[i].replaceAll("(?<=\\S)\\+", "[а-яА-Яa-zA-Z0-9\\-]*");
+                            }
 
-                        if(analyzeInput.isAnd()) {
-                            mainCondition.add(input[0]);
-                            mainCondition.add(input[1]);
-                        }
-                        else
-                        if(analyzeInput.isOr()) {
-                            mainCondition.add(input[0]);
-                            additionalCondition.add(input[1]);
+                            int n = analyzeInput.getN();
+
+                            if (analyzeInput.isAnd()) {
+                                mainCondition.add(input[0]);
+                                mainCondition.add(input[1]);
+                            } else if (analyzeInput.isOr()) {
+                                mainCondition.add(input[0]);
+                                additionalCondition.add(input[1]);
+                            } else {
+                                // nW
+                                mainCondition.add((input.length > 1) ? input[0] + "(\\s\\S+){0," + n + "}\\s" + input[1] : input[0]);
+
+                                if (analyzeInput.isND()) {
+                                    additionalCondition.add(input[1] + "(\\s\\S+){0," + n + "}\\s" + input[0]);
+                                }
+                            }
+
+                            HashMap<String, String> results = null;
+
+                            try {
+                                results = db.findMatches(mainCondition, additionalCondition);
+                            } catch (IOException | URISyntaxException e) {
+                                e.printStackTrace();
+                            }
+
+                            StringBuilder matches = new StringBuilder();
+
+                            if (results != null)
+                                for (String key : results.keySet()) {
+                                    matches.append(key).append("\n").append(results.get(key)).append("\n");
+                                }
+                            else
+                                matches.append("No matches ..");
+
+                            System.out.println(matches);
+
+                            response = matches.toString().replace("\n", "_");
                         }
                         else {
-                            // nW
-                            mainCondition.add(input[0] + "(\\s\\S+){0," + n + "}\\s" + input[1]);
-
-                            if (analyzeInput.isND()) {
-                                additionalCondition.add(input[1] + "(\\s\\S+){0," + n + "}\\s" + input[0]);
-                            }
+                            response = "Error ..";
                         }
-
-                        HashMap<String, String> results = null;
-
-                        try {
-                            results = db.findMatches(mainCondition, additionalCondition);
-                        } catch (IOException | URISyntaxException e) {
-                            e.printStackTrace();
-                        }
-
-                        StringBuilder matches = new StringBuilder();
-
-                        if(results != null)
-                            for(String key : results.keySet()) {
-                                matches.append(key).append("\n").append(results.get(key)).append("\n");
-                            }
-                        else
-                            matches.append("No matches ..");
-
-                        System.out.println(matches);
-
-                        String response = matches.toString().replace("\n", "_");
 
                         help.writeLine(response);
 

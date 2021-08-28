@@ -43,7 +43,6 @@ public class DataBaseClass {
 
         String fileName = "src/main/resources/response.json";
 
-        System.out.println("\ngetResource : " + fileName);
         File file = new File(fileName);
 
         BufferedReader br = new BufferedReader(new FileReader(file));

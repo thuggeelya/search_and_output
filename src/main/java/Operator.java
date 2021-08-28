@@ -9,19 +9,24 @@ import java.util.regex.Pattern;
 public record Operator(String request) {
 
     public @Nullable ArrayList<String> findOperator(String reg1, String reg2) {
-        ArrayList<String> matches = new ArrayList<>();
-        String requestTemp = this.request;
-        Pattern pattern = Pattern.compile(reg1, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(requestTemp);
-        while (matcher.find()) {
-            String sub = requestTemp.substring(matcher.start(), matcher.end());
-            matches.add(sub);
-            requestTemp = requestTemp.substring(sub.length());
-            matches.add(matcher.group(1));
-        }
 
-        if (matches.size() == 0) {
-            return null;
+        ArrayList<String> matches = new ArrayList<>();
+
+        String requestTemp = this.request;
+
+        if(reg1 != null) {
+            Pattern pattern = Pattern.compile(reg1, Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(requestTemp);
+            while (matcher.find()) {
+                String sub = requestTemp.substring(matcher.start(), matcher.end());
+                matches.add(sub);
+                requestTemp = requestTemp.substring(sub.length());
+                matches.add(matcher.group(1));
+            }
+
+            if (matches.size() == 0) {
+                return null;
+            }
         }
 
         Pattern pattern2 = Pattern.compile(reg2, Pattern.CASE_INSENSITIVE);
