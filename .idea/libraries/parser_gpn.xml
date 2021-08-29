@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="parser-gpn">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Help/parser-gpn.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

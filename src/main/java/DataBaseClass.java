@@ -18,26 +18,9 @@ public class DataBaseClass {
 
     protected boolean updateDB;
     protected String db;
-    protected HashMap<String, Integer> amountOfUsages;
 
     public DataBaseClass(boolean updateDB) {
         this.updateDB = updateDB;
-        this.amountOfUsages = new HashMap<>();
-    }
-
-    public int getUsagesOf(String company) {
-        return this.amountOfUsages.get(company);
-    }
-
-    public HashMap<String, Integer> getAmountOfUsages() {
-        return amountOfUsages;
-    }
-
-    private void incUsagesOf(String company) {
-        if(this.amountOfUsages.containsKey(company))
-            this.amountOfUsages.replace(company, this.amountOfUsages.get(company) + 1);
-        else
-            this.amountOfUsages.put(company, 1);
     }
 
     public void setUpdateDB(boolean updateDB) {
@@ -72,12 +55,17 @@ public class DataBaseClass {
         return sb.toString();
     }
 
-    private @NotNull JSONArray companies(String jsonText) {
+    private @NotNull JSONArray companies(@NotNull String jsonText) {
 
         JSONArray companies = new JSONArray();
 
-        JSONObject jsonRoot = new JSONObject(jsonText);
+        int index = jsonText.indexOf("{");
+        jsonText = jsonText.substring(index);
+
+        JSONObject jsonRoot = new JSONObject(jsonText.trim());
+
         JSONArray jsonArray = jsonRoot.getJSONArray("items");
+
         for(int i=0; i < jsonArray.length(); i++) {
             JSONObject jsonEntities = jsonArray.getJSONObject(i);
             JSONObject jsonObjectI = jsonEntities.getJSONObject("ЮЛ");
@@ -88,9 +76,9 @@ public class DataBaseClass {
         return companies;
     }
 
-    public HashMap<String, String> findMatches(@NotNull ArrayList<String> mainCondition, @Nullable ArrayList<String> additionalCondition) throws IOException, URISyntaxException {
+    public HashMap<Company, String> findMatches(@NotNull ArrayList<String> mainCondition, @Nullable ArrayList<String> additionalCondition) throws IOException, URISyntaxException {
 
-        HashMap<String, String> results = new HashMap<>();
+        HashMap<Company, String> companyResult = new HashMap<>();
 
         String jsonText;
 
@@ -103,7 +91,8 @@ public class DataBaseClass {
 
         JSONArray companies = companies(jsonText);
 
-        HashSet<String> subs = new HashSet<>();
+        HashSet<String> subs = new HashSet<>(); // all subs
+        HashSet<String> subsMain = new HashSet<>(); // necessary subs
 
         for(String condition : mainCondition) {
             Pattern pattern = Pattern.compile(condition, Pattern.CASE_INSENSITIVE);
@@ -112,6 +101,7 @@ public class DataBaseClass {
             while (matcher.find()) {
                 String sub = jsonText.substring(matcher.start(), matcher.end());
                 subs.add(sub);
+                subsMain.add(sub);
             }
         }
 
@@ -131,28 +121,36 @@ public class DataBaseClass {
 
         char q = (char) 34;
 
-        String companyName = "";
-        String companyTag = "НаимСокрЮЛ";
-
         for (Object o : companies) {
 
             JSONObject jsonObject = (JSONObject) o;
 
-            boolean objContainsSub;
+            boolean objContainsSub = false;
 
             StringBuilder result = new StringBuilder();
 
-            ArrayList<String> res = new ArrayList<>();
+            Company company = new Company();
 
             for (String key : jsonObject.keySet()) {
                 String obj = jsonObject.get(key).toString();
 
-                if(key.equals(companyTag)) {
-                    companyName = (String) jsonObject.get(key);
-                    if(!this.amountOfUsages.containsKey(companyName))
-                        this.amountOfUsages.put(companyName, 0);
+                String value = obj.replace("{", "")
+                        .replace("}", "")
+                        .replace(String.valueOf(q), "")
+                        .replace(":", ": ")
+                        .replace("Текст", " описание");
+
+                addCompany(company, key, value);
+
+                for(String sub : subsMain.toArray(new String[0])) {
+
+                    objContainsSub = obj.toLowerCase().contains(sub.toLowerCase());
+
+                    if(!objContainsSub)
+                        break;
                 }
 
+                if(objContainsSub)
                 for(String sub : subsArray) {
 
                     objContainsSub = obj.toLowerCase().contains(sub.toLowerCase());
@@ -161,27 +159,11 @@ public class DataBaseClass {
 
                     if(objContainsSub) {
 
-                        resTemp.append(q).append(sub).append(q).append(" -> ").append(
-                                                     obj.replace("{", "")
-                                                        .replace("}", "")
-                                                        .replace(String.valueOf(q), "")
-                                                        .replace(":", ": ")
-                                                        .replace("Текст", " описание")
-                                                                ).append("\n");
+                        resTemp.append(q).append(sub).append(q).append(" -> ").append(value).append("\n");
+                        result.append(resTemp);
 
-                        //if(!res.contains(resTemp.toString())) {
-
-                            this.incUsagesOf(companyName);
-
-                            res.add(resTemp.toString());
-
-                            result.append(resTemp);
-
-                            if (results.containsKey(companyName))
-                                results.replace(companyName, results.get(companyName) + result);
-                            else
-                                results.put(companyName, result.toString());
-                        //}
+                        companyResult.put(company, result.toString());
+                        company.incUsages();
                     }
 
                 }
@@ -190,7 +172,23 @@ public class DataBaseClass {
 
         }
 
-        return (results.size() == 0) ? null : results;
+        return (companyResult.size() == 0) ? null : companyResult;
+    }
+
+    private void addCompany(Company company, @NotNull String key, String obj) {
+        switch(key) {
+            case "ИНН" -> company.setInn(obj);
+            case "КПП" -> company.setKpp(obj);
+            case "ОГРН" -> company.setOrgn(obj);
+            case "ДатаОГРН" -> company.setDateOrgn(obj);
+            case "Статус" -> company.setStatus(obj);
+            case "Капитал" -> company.setCapital(obj);
+            case "АА" -> company.setAa(obj);
+            case "НаимПолнЮЛ" -> company.setName(obj);
+            case "Адрес" -> company.setAddress(obj);
+            case "Руководитель" -> company.setLeader(obj);
+            case "ОснВидДеят" -> company.setDesc(obj);
+        }
     }
 
 }

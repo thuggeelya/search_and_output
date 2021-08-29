@@ -48,9 +48,12 @@ public class Server {
                     new Thread(() -> { //run()
 
                         System.out.println(currentState + "\n");
-                        String request = help.readLine();
 
-                        String response;
+                        String request = null;
+
+                        request = help.readLine();
+
+                        String response = null;
 
                         if(!Objects.equals(request, "") && request != null) {
                             ArrayList<String> mainCondition = new ArrayList<>();
@@ -81,7 +84,7 @@ public class Server {
                                 }
                             }
 
-                            HashMap<String, String> results = null;
+                            HashMap<Company, String> results = null;
 
                             try {
                                 results = db.findMatches(mainCondition, additionalCondition);
@@ -91,22 +94,29 @@ public class Server {
 
                             StringBuilder matches = new StringBuilder();
 
-                            HashMap<String, Integer> usagesSort = db.getAmountOfUsages();
-
                             if (results != null) {
 
                                 companiesUsages.clear();
 
-                                for (String key : results.keySet()) {
-                                    companiesUsages.add(db.getUsagesOf(key));
+                                for (Company company : results.keySet()) {
+                                    companiesUsages.add(company.getUsages());
                                 }
 
                                 companiesUsages.sort(Collections.reverseOrder());
 
                                 for(int usage : companiesUsages)
-                                    for(String key: results.keySet())
-                                        if (usagesSort.get(key).equals(usage)) {
-                                            matches.append(key).append("\n").append(results.get(key)).append("Number of requests: ").append(usage).append("\n");
+                                    for(Company company : results.keySet())
+                                        if (company.getUsages() == usage) {
+                                            matches
+                                                    .append(company.getAa())
+                                                    .append("\n")
+                                                    .append(results.get(company))
+                                                    .append("\nAddress: ")
+                                                    .append(company.getAddress())
+                                                    .append("\n" + (char) 34 + "ОРГН" + (char) 34 + ": ")
+                                                    .append(company.getOrgn())
+                                                    .append("\nCurrent status: ")
+                                                    .append(company.getStatus()).append("\n\n");
                                             companiesUsages.set(companiesUsages.indexOf(usage), -1);
                                         }
 /*
@@ -124,9 +134,9 @@ public class Server {
 
                             response = matches.toString().replace("\n", "_");
                         }
-                        else {
-                            response = "Error ..";
-                        }
+                        //else {
+                        //    response = "Error ..";
+                        //}
 
                         help.writeLine(response);
 

@@ -38,8 +38,9 @@ public record Operator(String request) {
         return matches;
     }
 
+    @NotNull
     @Contract("_ -> param1")
-    public String @NotNull [] delQuotes(String @NotNull [] input) {
+    public String[] delQuotes(@NotNull String[] input) {
         int len = input.length;
         char q = (char) 34;
         for(int i=0; i<len; i++) {
