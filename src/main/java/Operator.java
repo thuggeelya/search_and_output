@@ -41,9 +41,9 @@ public record Operator(String request) {
     @Contract("_ -> param1")
     public String @NotNull [] delQuotes(String @NotNull [] input) {
         int len = input.length;
+        char q = (char) 34;
         for(int i=0; i<len; i++) {
-            if(input[i].matches("(?<=\\\").+(?=\\\")"))
-                input[i] = input[i].substring(1, len-1);
+            input[i] = input[i].replace(String.valueOf(q), "");
         }
 
         return input;

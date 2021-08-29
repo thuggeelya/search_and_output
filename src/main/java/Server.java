@@ -4,9 +4,7 @@ import ivf6.Help;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Server {
@@ -20,9 +18,11 @@ public class Server {
     public void changeState(State state) {
         this.state = state;
     }
+
     public State getState() {
         return state;
     }
+
     public String currentState(@NotNull Server myServer) {
         return myServer.getState().onSearch();
     }
@@ -36,6 +36,8 @@ public class Server {
 
             DataBaseClass db = new DataBaseClass(true);
 
+            ArrayList<Integer> companiesUsages = new ArrayList<>();
+
             while (go_on.get()) {
 
                 Help help = new Help(server);
@@ -48,7 +50,7 @@ public class Server {
                         System.out.println(currentState + "\n");
                         String request = help.readLine();
 
-                        String response = "";
+                        String response;
 
                         if(!Objects.equals(request, "") && request != null) {
                             ArrayList<String> mainCondition = new ArrayList<>();
@@ -89,10 +91,32 @@ public class Server {
 
                             StringBuilder matches = new StringBuilder();
 
-                            if (results != null)
+                            HashMap<String, Integer> usagesSort = db.getAmountOfUsages();
+
+                            if (results != null) {
+
+                                companiesUsages.clear();
+
+                                for (String key : results.keySet()) {
+                                    companiesUsages.add(db.getUsagesOf(key));
+                                }
+
+                                companiesUsages.sort(Collections.reverseOrder());
+
+                                for(int usage : companiesUsages)
+                                    for(String key: results.keySet())
+                                        if (usagesSort.get(key).equals(usage)) {
+                                            matches.append(key).append("\n").append(results.get(key)).append("Number of requests: ").append(usage).append("\n");
+                                            companiesUsages.set(companiesUsages.indexOf(usage), -1);
+                                        }
+/*
                                 for (String key : results.keySet()) {
                                     matches.append(key).append("\n").append(results.get(key)).append("\n");
                                 }
+
+ */
+
+                            }
                             else
                                 matches.append("No matches ..");
 
